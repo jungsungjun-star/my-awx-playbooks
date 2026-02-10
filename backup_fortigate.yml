@@ -1,0 +1,29 @@
+---
+- name: Backup FortiGate Configuration
+  hosts: fortigates
+  gather_facts: no
+
+  tasks:
+    - name: Get full configuration
+      fortinet.fortios.fortios_monitor_fact:
+        access_token: "{{ fortigates_access_token }}"
+        vdom: "root"
+        selector: 'system_config_backup'
+        params:
+          scope: "global"
+      register: backup_res
+
+    - name: Ensure backup directory exists
+      file:
+        path: "./backups"
+        state: directory
+      delegate_to: localhost
+
+    - name: Save configuration to file
+      copy:
+        # backup_res.meta.results 자체가 텍스트일 경우와 
+        # backup_res.meta.raw 자체가 텍스트일 경우를 모두 고려
+        content: "{{ backup_res.meta.results if backup_res.meta.results is string else (backup_res.meta.results.out | default(backup_res.meta.raw)) }}"
+        dest: "./backups/{{ inventory_hostname }}_backup.conf"
+      delegate_to: localhost
+      when: backup_res.meta.http_status == 200
