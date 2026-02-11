@@ -3,34 +3,24 @@
   hosts: all
   gather_facts: no
   connection: httpapi
-  
-  # [추가] 연결 최적화 설정
-  vars:
-    ansible_httpapi_use_ssl: true
-    ansible_httpapi_validate_certs: false
-    ansible_connect_timeout: 60
-    ansible_command_timeout: 120
-    # 연결 유지 시간을 늘려 핸드셰이크 횟수를 줄입니다.
-    ansible_persistent_connect_timeout: 120
-
-  collections:
-    - fortinet.fortios
 
   tasks:
     - name: Get full configuration
       fortinet.fortios.fortios_monitor_fact:
         access_token: "{{ fortios_token }}"
-        vdom: "root"
+        vdom: "root"      # VDOM을 사용하지 않더라도 root로 명시하는 것이 표준입니다.
         selector: 'system_config_backup'
+        params:
+          scope: "global" # 전체 설정을 가져오기 위한 파라미터
       register: backup_res
-      no_log: true  # 출력 부하 감소
+      # 에러 확인을 위해 잠시 주석 처리하거나 false로 두세요
+      no_log: false 
 
     - name: Save configuration to file
       copy:
-        content: "{{ backup_res.meta.results if backup_res.meta.results is string else (backup_res.meta.results.out | default(backup_res.meta.raw)) }}"
+        # 응답 구조가 버전마다 다를 수 있어 더 안전한 추출 방식을 사용합니다.
+        content: "{{ backup_res.meta.results.out | default(backup_res.meta.results) }}"
         dest: "/tmp/{{ inventory_hostname }}_backup.conf"
       delegate_to: localhost
-      # 결과값이 있을 때만 실행하여 불필요한 연산 방지
-      when: 
-        - backup_res.meta is defined
-        - backup_res.meta.http_status == 200
+      # 결과가 성공(200 OK)일 때만 저장
+      when: backup_res.meta.http_status == 200
