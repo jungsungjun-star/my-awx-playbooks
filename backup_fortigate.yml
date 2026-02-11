@@ -3,29 +3,25 @@
   hosts: all
   gather_facts: no
   connection: httpapi
-vars:
-    # 인벤토리 변수보다 플레이북 내 vars가 우선순위가 높습니다.
+  # vars는 connection과 같은 시작 라인에 있어야 합니다.
+  vars:
     ansible_port: 10443
     ansible_httpapi_use_ssl: true
     ansible_httpapi_validate_certs: false
-    
+    ansible_connect_timeout: 300
+    ansible_command_timeout: 300
+
   tasks:
     - name: Get full configuration
       fortinet.fortios.fortios_monitor_fact:
         access_token: "{{ fortios_token }}"
-        vdom: "root"      # VDOM을 사용하지 않더라도 root로 명시하는 것이 표준입니다.
+        vdom: "root"
         selector: 'system_config_backup'
-        params:
-          scope: "global" # 전체 설정을 가져오기 위한 파라미터
       register: backup_res
-      # 에러 확인을 위해 잠시 주석 처리하거나 false로 두세요
-      no_log: false 
 
     - name: Save configuration to file
       copy:
-        # 응답 구조가 버전마다 다를 수 있어 더 안전한 추출 방식을 사용합니다.
         content: "{{ backup_res.meta.results.out | default(backup_res.meta.results) }}"
         dest: "/tmp/{{ inventory_hostname }}_backup.conf"
       delegate_to: localhost
-      # 결과가 성공(200 OK)일 때만 저장
       when: backup_res.meta.http_status == 200
