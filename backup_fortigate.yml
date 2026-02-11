@@ -3,6 +3,15 @@
   hosts: all
   gather_facts: no
   connection: httpapi
+  
+  # [추가] 연결 최적화 설정
+  vars:
+    ansible_httpapi_use_ssl: true
+    ansible_httpapi_validate_certs: false
+    ansible_connect_timeout: 60
+    ansible_command_timeout: 120
+    # 연결 유지 시간을 늘려 핸드셰이크 횟수를 줄입니다.
+    ansible_persistent_connect_timeout: 120
 
   collections:
     - fortinet.fortios
@@ -10,18 +19,18 @@
   tasks:
     - name: Get full configuration
       fortinet.fortios.fortios_monitor_fact:
-        # 인젝터에서 정의한 변수명을 그대로 사용합니다.
-        access_token: "{{ fortios_api_token }}"
+        access_token: "{{ fortios_token }}"
         vdom: "root"
         selector: 'system_config_backup'
-        params:
-          scope: "global"
       register: backup_res
+      no_log: true  # 출력 부하 감소
 
     - name: Save configuration to file
       copy:
         content: "{{ backup_res.meta.results if backup_res.meta.results is string else (backup_res.meta.results.out | default(backup_res.meta.raw)) }}"
-        # AWX 내부의 쓰기 가능한 경로 사용
         dest: "/tmp/{{ inventory_hostname }}_backup.conf"
       delegate_to: localhost
-      when: backup_res.meta.http_status == 200
+      # 결과값이 있을 때만 실행하여 불필요한 연산 방지
+      when: 
+        - backup_res.meta is defined
+        - backup_res.meta.http_status == 200
