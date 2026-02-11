@@ -8,10 +8,9 @@
   collections:
     - fortinet.fortios
 
-  tasks:
+tasks:
     - name: Get full configuration
-      fortinet.fortios.fortios_monitor_fact:
-        # Credential에서 정의했다면 변수명을 맞춰주거나 직접 입력
+      fortinet.fortios.fortios_monitor_fact:  # 반드시 풀네임 사용
         access_token: "{{ fortigates_access_token }}"
         vdom: "root"
         selector: 'system_config_backup'
