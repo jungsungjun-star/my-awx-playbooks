@@ -10,23 +10,18 @@
   tasks:
     - name: Get full configuration
       fortinet.fortios.fortios_monitor_fact:
-        # 이 부분을 수정합니다! AWX Credential의 비밀번호 값을 가져오라는 뜻입니다.
-        access_token: "{{ ansible_password }}" 
+        # 인젝터에서 정의한 변수명을 그대로 사용합니다.
+        access_token: "{{ fortios_api_token }}"
         vdom: "root"
         selector: 'system_config_backup'
         params:
           scope: "global"
       register: backup_res
 
-    - name: Ensure backup directory exists
-      file:
-        path: "/tmp/backups"
-        state: directory
-      delegate_to: localhost
-
     - name: Save configuration to file
       copy:
         content: "{{ backup_res.meta.results if backup_res.meta.results is string else (backup_res.meta.results.out | default(backup_res.meta.raw)) }}"
-        dest: "/tmp/backups/{{ inventory_hostname }}_backup.conf"
+        # AWX 내부의 쓰기 가능한 경로 사용
+        dest: "/tmp/{{ inventory_hostname }}_backup.conf"
       delegate_to: localhost
       when: backup_res.meta.http_status == 200
