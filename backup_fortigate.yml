@@ -3,7 +3,12 @@
   hosts: all
   gather_facts: no
   connection: httpapi
-
+vars:
+    # 인벤토리 변수보다 플레이북 내 vars가 우선순위가 높습니다.
+    ansible_port: 10443
+    ansible_httpapi_use_ssl: true
+    ansible_httpapi_validate_certs: false
+    
   tasks:
     - name: Get full configuration
       fortinet.fortios.fortios_monitor_fact:
