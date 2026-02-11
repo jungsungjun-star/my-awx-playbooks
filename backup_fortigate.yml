@@ -4,14 +4,14 @@
   gather_facts: no
   connection: httpapi
 
-  # collections 바로 아래에 하이픈(-)과 2칸 들여쓰기를 확인하세요
   collections:
     - fortinet.fortios
 
   tasks:
     - name: Get full configuration
       fortinet.fortios.fortios_monitor_fact:
-        access_token: "{{ fortigates_access_token }}"
+        # 이 부분을 수정합니다! AWX Credential의 비밀번호 값을 가져오라는 뜻입니다.
+        access_token: "{{ ansible_password }}" 
         vdom: "root"
         selector: 'system_config_backup'
         params:
